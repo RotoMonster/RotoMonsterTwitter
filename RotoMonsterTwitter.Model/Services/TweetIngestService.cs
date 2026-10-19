@@ -13,19 +13,25 @@ public class TweetIngestService : ITweetIngestService
     private readonly TwitterDbContext _db;
     private readonly ITweetProcessingService _processing;
     private readonly ITwitterApiService _api;
+    private readonly XApiService _x;
     private readonly TwitterApiOptions _options;
 
     public TweetIngestService(TwitterDbContext db, ITwitterApiService api,
         IOptions<TwitterApiOptions> options,
-        ITweetProcessingService processing)
+        ITweetProcessingService processing,
+        XApiService x)
     {
         _db = db;
         _api = api;
+        _x = x;
         _options = options.Value;
         _processing = processing;
     }
 
-    public async Task<IngestResult> IngestListAsync(long listId, CancellationToken ct = default)
+    public Task<IngestResult> IngestListAsync(long listId, CancellationToken ct = default)
+        => IngestListAsync(listId, null, ct);
+
+    public async Task<IngestResult> IngestListAsync(long listId, string? source, CancellationToken ct = default)
     {
         var (list, result) = await LoadListAsync(listId, ct);
         if (list == null) return result;
@@ -33,9 +39,14 @@ public class TweetIngestService : ITweetIngestService
         var collected = new List<ParsedTweet>();
         string? cursor = null;
 
-        for (var page = 0; page < Math.Max(1, _options.MaxPagesPerFetch); page++)
+        var useX = IsX(source ?? _options.Source);
+        ITwitterApiService api = useX ? _x : _api;
+        result.Source = useX ? "x" : "twitterapi.io";
+        var maxPages = useX ? _options.XMaxPagesPerFetch : _options.MaxPagesPerFetch;
+
+        for (var page = 0; page < Math.Max(1, maxPages); page++)
         {
-            var fetched = await _api.GetListTweetsPageAsync(listId, list.LastFetchedUnix, cursor, ct);
+            var fetched = await api.GetListTweetsPageAsync(listId, list.LastFetchedUnix, cursor, ct);
             result.PagesFetched++;
             collected.AddRange(fetched.Tweets);
 
@@ -49,6 +60,12 @@ public class TweetIngestService : ITweetIngestService
 
         return await PersistAsync(list, collected, result, ct);
     }
+
+    private static bool IsX(string? source)
+        => !string.IsNullOrWhiteSpace(source) &&
+           (source.Equals("x", StringComparison.OrdinalIgnoreCase) ||
+            source.Equals("twitter", StringComparison.OrdinalIgnoreCase) ||
+            source.Equals("xapi", StringComparison.OrdinalIgnoreCase));
 
     public async Task<IngestResult> IngestJsonAsync(long listId, string json,
         CancellationToken ct = default)

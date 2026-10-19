@@ -133,6 +133,9 @@ public class RotoMonsterTwitterClient : IRotoMonsterTwitterClient
     public Task<IngestResult> IngestListAsync(long listId, CancellationToken ct = default)
         => PostAsync<object, IngestResult>($"api/tweets/Ingest/{listId}", new { }, ct);
 
+    public Task<IngestResult> IngestListAsync(long listId, string source, CancellationToken ct = default)
+        => PostAsync<object, IngestResult>($"api/tweets/Ingest/{listId}?source={Uri.EscapeDataString(source ?? "")}", new { }, ct);
+
     // --------------------------------------------------------------- import
 
     public Task<AnalyzeTweetResult> AnalyzeWithAIAsync(

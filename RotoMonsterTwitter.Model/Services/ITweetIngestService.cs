@@ -8,6 +8,8 @@ public interface ITweetIngestService
     /// <summary>Fetch from twitterapi.io and store.</summary>
     Task<IngestResult> IngestListAsync(long listId, CancellationToken ct = default);
 
+    Task<IngestResult> IngestListAsync(long listId, string? source, CancellationToken ct = default);
+
     Task<AddTweetResult> AddTweetAsync(AddTweetRequest request, CancellationToken ct = default);
 
     /// <summary>

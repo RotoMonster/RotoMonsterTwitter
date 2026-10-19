@@ -64,8 +64,8 @@ public class TweetsController : ControllerBase
 
     /// <summary>Pull new tweets for a list. This is what the monitoring app calls.</summary>
     [HttpPost("Ingest/{listId:long}")]
-    public async Task<IActionResult> Ingest(long listId, CancellationToken ct)
-        => Ok(await _ingest.IngestListAsync(listId, ct));
+    public async Task<IActionResult> Ingest(long listId, [FromQuery] string? source, CancellationToken ct)
+        => Ok(await _ingest.IngestListAsync(listId, source, ct));
 
     /// <summary>Dev-only. POST a raw twitterapi.io body and store it.</summary>
     [HttpPost("IngestJson/{listId:long}")]
