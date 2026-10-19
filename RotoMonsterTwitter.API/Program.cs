@@ -30,9 +30,6 @@ builder.Services.AddHttpClient<ITwitterApiService, TwitterApiService>((sp, clien
     client.Timeout = TimeSpan.FromSeconds(30);
 });
 
-builder.Services.AddHttpClient<XApiService>(
-    client => client.Timeout = TimeSpan.FromSeconds(30));
-
 builder.Services.AddHttpClient<ITwitterPosterService, TwitterPosterService>(
     client => client.Timeout = TimeSpan.FromSeconds(30));
 

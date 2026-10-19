@@ -41,10 +41,8 @@ public class TweetResult
     public List<TweetTeamMatch> Teams { get; set; } = new();
 
     /// <summary>Link to the tweet on X. Derived from the user and tweet id.</summary>
-    public bool IsManual => TweetId != null && TweetId.StartsWith("manual-");
-
     public string TweetUrl =>
-        string.IsNullOrEmpty(ScreenUsername) || string.IsNullOrEmpty(TweetId) || IsManual
+        string.IsNullOrEmpty(ScreenUsername) || string.IsNullOrEmpty(TweetId)
             ? ""
             : $"https://twitter.com/{ScreenUsername}/status/{TweetId}";
 

@@ -3,7 +3,6 @@ namespace RotoMonsterTwitter.Contracts.Results;
 public class IngestResult : BaseResult
 {
     public long ListId { get; set; }
-    public string Source { get; set; } = "";
     public int SportId { get; set; }
     public int PagesFetched { get; set; }
     public int TweetsReturned { get; set; }
