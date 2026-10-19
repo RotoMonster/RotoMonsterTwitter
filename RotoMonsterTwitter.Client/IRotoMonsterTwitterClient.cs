@@ -38,6 +38,12 @@ public interface IRotoMonsterTwitterClient
     /// <summary>Pull new tweets for a list. Call this on a schedule.</summary>
     Task<IngestResult> IngestListAsync(long listId, CancellationToken ct = default);
 
+    Task<IngestResult> IngestListAsync(long listId, string source, CancellationToken ct = default);
+
+    Task<AddTweetResult> AddTweetAsync(AddTweetRequest request, CancellationToken ct = default);
+
+    Task<AddTweetResult> AddTweetAsync(string text, int sportId, string? screenUsername = null, CancellationToken ct = default);
+
     /// <summary>
     /// Summarize a tweet with AI (the Auto Fill button). Returns the summary
     /// text; you decide where it goes.

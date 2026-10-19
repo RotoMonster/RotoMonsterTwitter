@@ -133,6 +133,9 @@ public class RotoMonsterTwitterClient : IRotoMonsterTwitterClient
     public Task<IngestResult> IngestListAsync(long listId, CancellationToken ct = default)
         => PostAsync<object, IngestResult>($"api/tweets/Ingest/{listId}", new { }, ct);
 
+    public Task<IngestResult> IngestListAsync(long listId, string source, CancellationToken ct = default)
+        => PostAsync<object, IngestResult>($"api/tweets/Ingest/{listId}?source={Uri.EscapeDataString(source ?? "")}", new { }, ct);
+
     // --------------------------------------------------------------- import
 
     public Task<AnalyzeTweetResult> AnalyzeWithAIAsync(
@@ -164,6 +167,20 @@ public class RotoMonsterTwitterClient : IRotoMonsterTwitterClient
         SetUserFlagsRequest request, CancellationToken ct = default)
         => PostAsync<SetUserFlagsRequest, SetUserFlagsResult>(
             "api/users/SetFlags", request, ct);
+
+    public Task<AddTweetResult> AddTweetAsync(
+        AddTweetRequest request, CancellationToken ct = default)
+        => PostAsync<AddTweetRequest, AddTweetResult>(
+            "api/tweets/AddTweet", request, ct);
+
+    public Task<AddTweetResult> AddTweetAsync(
+        string text, int sportId, string? screenUsername = null, CancellationToken ct = default)
+        => AddTweetAsync(new AddTweetRequest
+        {
+            Text = text,
+            SportId = sportId,
+            ScreenUsername = screenUsername
+        }, ct);
 
     public Task<SetAiTextResult> SetAiTextAsync(
         SetAiTextRequest request, CancellationToken ct = default)

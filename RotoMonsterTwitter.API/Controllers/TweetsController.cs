@@ -45,6 +45,18 @@ public class TweetsController : ControllerBase
         [FromBody] SetAiTextRequest request, CancellationToken ct)
         => Ok(await _tweets.SetAiTextAsync(request, ct));
 
+    [HttpPost("AddTweet")]
+    public async Task<IActionResult> AddTweet(
+        [FromBody] AddTweetRequest request, CancellationToken ct)
+    {
+        var result = await _ingest.AddTweetAsync(request, ct);
+        if (result.Success)
+        {
+            result.Tweet = (await _tweets.ReadTweetAsync(result.TweetId, ct)).Tweet;
+        }
+        return Ok(result);
+    }
+
     [HttpPost("PostTweet")]
     public async Task<IActionResult> PostTweet(
         [FromBody] PostTweetRequest request, CancellationToken ct)
@@ -52,8 +64,8 @@ public class TweetsController : ControllerBase
 
     /// <summary>Pull new tweets for a list. This is what the monitoring app calls.</summary>
     [HttpPost("Ingest/{listId:long}")]
-    public async Task<IActionResult> Ingest(long listId, CancellationToken ct)
-        => Ok(await _ingest.IngestListAsync(listId, ct));
+    public async Task<IActionResult> Ingest(long listId, [FromQuery] string? source, CancellationToken ct)
+        => Ok(await _ingest.IngestListAsync(listId, source, ct));
 
     /// <summary>Dev-only. POST a raw twitterapi.io body and store it.</summary>
     [HttpPost("IngestJson/{listId:long}")]
