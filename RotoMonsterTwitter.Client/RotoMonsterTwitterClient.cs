@@ -165,6 +165,20 @@ public class RotoMonsterTwitterClient : IRotoMonsterTwitterClient
         => PostAsync<SetUserFlagsRequest, SetUserFlagsResult>(
             "api/users/SetFlags", request, ct);
 
+    public Task<AddTweetResult> AddTweetAsync(
+        AddTweetRequest request, CancellationToken ct = default)
+        => PostAsync<AddTweetRequest, AddTweetResult>(
+            "api/tweets/AddTweet", request, ct);
+
+    public Task<AddTweetResult> AddTweetAsync(
+        string text, int sportId, string? screenUsername = null, CancellationToken ct = default)
+        => AddTweetAsync(new AddTweetRequest
+        {
+            Text = text,
+            SportId = sportId,
+            ScreenUsername = screenUsername
+        }, ct);
+
     public Task<SetAiTextResult> SetAiTextAsync(
         SetAiTextRequest request, CancellationToken ct = default)
         => PostAsync<SetAiTextRequest, SetAiTextResult>(

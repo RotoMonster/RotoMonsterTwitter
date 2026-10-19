@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using RotoMonsterTwitter.Model.Configuration;
 using RotoMonsterTwitter.Model.Data;
 using RotoMonsterTwitter.Model.Entities;
+using RotoMonsterTwitter.Contracts.Requests;
 using RotoMonsterTwitter.Contracts.Results;
 
 namespace RotoMonsterTwitter.Model.Services;
@@ -69,6 +70,88 @@ public class TweetIngestService : ITweetIngestService
 
         result.PagesFetched = 1;
         return await PersistAsync(list, page.Tweets, result, ct);
+    }
+
+    public async Task<AddTweetResult> AddTweetAsync(AddTweetRequest request, CancellationToken ct = default)
+    {
+        var result = new AddTweetResult();
+
+        if (request == null || string.IsNullOrWhiteSpace(request.Text))
+        {
+            result.Success = false;
+            result.ErrorMessage = "Text is required.";
+            return result;
+        }
+
+        if (request.SportId <= 0)
+        {
+            result.Success = false;
+            result.ErrorMessage = "SportId is required.";
+            return result;
+        }
+
+        var now = DateTime.UtcNow;
+        var screen = string.IsNullOrWhiteSpace(request.ScreenUsername)
+            ? "RotoMonster"
+            : request.ScreenUsername.Trim().TrimStart('@');
+        var userId = "manual-" + screen.ToLowerInvariant();
+
+        var user = await _db.TweetUsers.FirstOrDefaultAsync(u => u.TwitterUserId == userId, ct);
+        if (user == null)
+        {
+            user = new TweetUser
+            {
+                TwitterUserId = userId,
+                ScreenUsername = screen,
+                DisplayName = string.IsNullOrWhiteSpace(request.DisplayName) ? screen : request.DisplayName.Trim(),
+                ImageUrl = request.ImageUrl?.Trim() ?? "",
+                IsNews = request.IsNews ?? true,
+                IsTop = request.IsTop ?? true,
+                LastSeenAt = now
+            };
+            _db.TweetUsers.Add(user);
+        }
+        else
+        {
+            if (!string.IsNullOrWhiteSpace(request.DisplayName)) user.DisplayName = request.DisplayName.Trim();
+            if (!string.IsNullOrWhiteSpace(request.ImageUrl)) user.ImageUrl = request.ImageUrl.Trim();
+            if (request.IsNews.HasValue) user.IsNews = request.IsNews.Value;
+            if (request.IsTop.HasValue) user.IsTop = request.IsTop.Value;
+            user.LastSeenAt = now;
+        }
+
+        var created = request.CreatedDate ?? now;
+        created = created.Kind switch
+        {
+            DateTimeKind.Utc => created,
+            DateTimeKind.Local => created.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(created, DateTimeKind.Utc)
+        };
+
+        var tweet = new Tweet
+        {
+            TweetId = "manual-" + Guid.NewGuid().ToString("N"),
+            TwitterUserId = userId,
+            SportId = request.SportId,
+            Text = request.Text.Trim(),
+            CreatedDate = created,
+            DateAdded = now
+        };
+
+        _db.Tweets.Add(tweet);
+        await _db.SaveChangesAsync(ct);
+
+        try
+        {
+            await _processing.ProcessAsync(batchSize: 500, reprocessAll: false, ct: ct);
+        }
+        catch
+        {
+        }
+
+        _db.ChangeTracker.Clear();
+        result.TweetId = tweet.TweetId;
+        return result;
     }
 
     private async Task<(TwitterList? list, IngestResult result)> LoadListAsync(

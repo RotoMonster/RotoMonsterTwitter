@@ -45,6 +45,18 @@ public class TweetsController : ControllerBase
         [FromBody] SetAiTextRequest request, CancellationToken ct)
         => Ok(await _tweets.SetAiTextAsync(request, ct));
 
+    [HttpPost("AddTweet")]
+    public async Task<IActionResult> AddTweet(
+        [FromBody] AddTweetRequest request, CancellationToken ct)
+    {
+        var result = await _ingest.AddTweetAsync(request, ct);
+        if (result.Success)
+        {
+            result.Tweet = (await _tweets.ReadTweetAsync(result.TweetId, ct)).Tweet;
+        }
+        return Ok(result);
+    }
+
     [HttpPost("PostTweet")]
     public async Task<IActionResult> PostTweet(
         [FromBody] PostTweetRequest request, CancellationToken ct)
