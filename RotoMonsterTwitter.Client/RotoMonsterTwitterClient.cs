@@ -156,6 +156,11 @@ public class RotoMonsterTwitterClient : IRotoMonsterTwitterClient
         => PostAsync<PostTweetRequest, PostTweetResult>(
             "api/tweets/PostTweet", new PostTweetRequest { Text = text }, ct);
 
+    public Task<PostTweetResult> PostTweetAsync(
+        string text, string? account, CancellationToken ct = default)
+        => PostAsync<PostTweetRequest, PostTweetResult>(
+            "api/tweets/PostTweet", new PostTweetRequest { Text = text, Account = account }, ct);
+
     // -------------------------------------------------------------- plumbing
 
     public Task<GetUsersResult> GetUsersAsync(

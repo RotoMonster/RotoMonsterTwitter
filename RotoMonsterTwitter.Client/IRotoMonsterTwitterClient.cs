@@ -94,4 +94,6 @@ public interface IRotoMonsterTwitterClient
 
     /// <summary>Post a tweet through the API's X credentials.</summary>
     Task<PostTweetResult> PostTweetAsync(string text, CancellationToken ct = default);
+
+    Task<PostTweetResult> PostTweetAsync(string text, string? account, CancellationToken ct = default);
 }

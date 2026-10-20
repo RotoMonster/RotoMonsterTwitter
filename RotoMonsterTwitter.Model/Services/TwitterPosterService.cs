@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
@@ -8,11 +9,6 @@ using RotoMonsterTwitter.Contracts.Results;
 
 namespace RotoMonsterTwitter.Model.Services;
 
-/// <summary>
-/// Posts to X API v2 using OAuth 1.0a user-context signing. Ported from Ken's
-/// SharedCS TwitterPoster, made async, with a fixed nonce generator and the
-/// API's error body surfaced instead of swallowed.
-/// </summary>
 public class TwitterPosterService : ITwitterPosterService
 {
     private static readonly DateTime UnixEpoch =
@@ -27,61 +23,136 @@ public class TwitterPosterService : ITwitterPosterService
         _options = options.Value;
     }
 
+    public Task<PostTweetResult> PostTweetAsync(string text, CancellationToken ct = default)
+        => PostTweetAsync(text, null, ct);
+
     public async Task<PostTweetResult> PostTweetAsync(
-        string text, CancellationToken ct = default)
+        string text, string? account, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(text))
         {
             return Fail("Tweet text is required.");
         }
 
-        if (!_options.IsConfigured)
+        var accounts = _options.AllAccounts();
+        if (accounts.Count == 0)
         {
-            return Fail("X API credentials are not configured. "
-                + "Set the TwitterPost section (ConsumerKey, ConsumerSecret, "
-                + "AccessToken, AccessTokenSecret).");
+            return Fail("X API credentials are not configured. Add accounts under TwitterPost:Accounts "
+                + "(Name, ConsumerKey, ConsumerSecret, AccessToken, AccessTokenSecret).");
         }
+
+        List<TwitterPostAccount> toTry;
+        if (string.IsNullOrWhiteSpace(account))
+        {
+            toTry = accounts;
+        }
+        else
+        {
+            var match = accounts.FirstOrDefault(a =>
+                string.Equals(a.Name, account.Trim().TrimStart('@'), StringComparison.OrdinalIgnoreCase));
+            if (match == null)
+            {
+                return Fail($"No posting account named '{account}'. Configured: "
+                    + string.Join(", ", accounts.Select(a => a.Name)));
+            }
+            toTry = new List<TwitterPostAccount> { match };
+        }
+
+        PostTweetResult? last = null;
+        var tried = new List<string>();
+
+        foreach (var acct in toTry)
+        {
+            tried.Add(acct.Name);
+            last = await PostAsAsync(acct, text, ct);
+            last.AccountsTried = new List<string>(tried);
+
+            if (last.Success || !last.LimitReached)
+            {
+                return last;
+            }
+        }
+
+        return last!;
+    }
+
+    private async Task<PostTweetResult> PostAsAsync(
+        TwitterPostAccount acct, string text, CancellationToken ct)
+    {
+        var result = new PostTweetResult { AccountUsed = acct.Name };
 
         try
         {
-            var request = BuildRequest(text);
+            var request = BuildRequest(acct, text);
             var response = await _http.SendAsync(request, ct);
             var body = await response.Content.ReadAsStringAsync(ct);
 
+            ReadLimits(response, result);
+
+            if (response.StatusCode == HttpStatusCode.TooManyRequests)
+            {
+                result.Success = false;
+                result.LimitReached = true;
+                result.ErrorMessage = $"{acct.Name} hit its posting limit: {Trim(body)}";
+                return result;
+            }
+
             if (!response.IsSuccessStatusCode)
             {
-                return Fail($"X API returned {(int)response.StatusCode}: {Trim(body)}");
+                result.Success = false;
+                result.ErrorMessage = $"X API returned {(int)response.StatusCode} for {acct.Name}: {Trim(body)}";
+                return result;
             }
 
             var data = JObject.Parse(body)["data"];
-
-            return new PostTweetResult
-            {
-                TweetId = data?["id"]?.ToString(),
-                Text = data?["text"]?.ToString() ?? text
-            };
+            result.TweetId = data?["id"]?.ToString();
+            result.Text = data?["text"]?.ToString() ?? text;
+            return result;
         }
         catch (Exception ex)
         {
-            return Fail(ex.Message);
+            result.Success = false;
+            result.ErrorMessage = ex.Message;
+            return result;
         }
     }
 
-    private HttpRequestMessage BuildRequest(string text)
+    private static void ReadLimits(HttpResponseMessage response, PostTweetResult result)
+    {
+        result.Limit24h = HeaderInt(response, "x-user-limit-24hour-limit")
+            ?? HeaderInt(response, "x-app-limit-24hour-limit");
+        result.Remaining24h = HeaderInt(response, "x-user-limit-24hour-remaining")
+            ?? HeaderInt(response, "x-app-limit-24hour-remaining");
+        var reset = HeaderInt(response, "x-user-limit-24hour-reset")
+            ?? HeaderInt(response, "x-app-limit-24hour-reset");
+        if (reset.HasValue)
+        {
+            result.ResetsAt = UnixEpoch.AddSeconds(reset.Value);
+        }
+    }
+
+    private static int? HeaderInt(HttpResponseMessage response, string name)
+    {
+        if (response.Headers.TryGetValues(name, out var values)
+            && int.TryParse(values.FirstOrDefault(), out var n))
+        {
+            return n;
+        }
+        return null;
+    }
+
+    private HttpRequestMessage BuildRequest(TwitterPostAccount acct, string text)
     {
         var oauth = new SortedDictionary<string, string>(StringComparer.Ordinal)
         {
-            ["oauth_consumer_key"] = _options.ConsumerKey,
+            ["oauth_consumer_key"] = acct.ConsumerKey,
             ["oauth_nonce"] = Guid.NewGuid().ToString("N"),
             ["oauth_signature_method"] = "HMAC-SHA1",
-            ["oauth_timestamp"] = ((long)(DateTime.UtcNow - UnixEpoch).TotalSeconds)
-                .ToString(),
-            ["oauth_token"] = _options.AccessToken,
+            ["oauth_timestamp"] = ((long)(DateTime.UtcNow - UnixEpoch).TotalSeconds).ToString(),
+            ["oauth_token"] = acct.AccessToken,
             ["oauth_version"] = "1.0"
         };
 
-        // The JSON body is not part of the signature base for v2, since the
-        // body is not form-encoded. Only the oauth parameters are signed.
         var parameterString = string.Join("&",
             oauth.Select(kv => $"{Escape(kv.Key)}={Escape(kv.Value)}"));
 
@@ -89,7 +160,7 @@ public class TwitterPosterService : ITwitterPosterService
             "POST&", Escape(_options.PostUrl), "&", Escape(parameterString));
 
         var signingKey = string.Concat(
-            Escape(_options.ConsumerSecret), "&", Escape(_options.AccessTokenSecret));
+            Escape(acct.ConsumerSecret), "&", Escape(acct.AccessTokenSecret));
 
         using var hmac = new HMACSHA1(Encoding.UTF8.GetBytes(signingKey));
         var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(signatureBase));
@@ -99,8 +170,7 @@ public class TwitterPosterService : ITwitterPosterService
         var header = string.Join(", ",
             oauth.Select(kv => $"{Escape(kv.Key)}=\"{Escape(kv.Value)}\""));
 
-        var payload = new JObject { ["text"] = text }
-            .ToString(Newtonsoft.Json.Formatting.None);
+        var payload = new JObject { ["text"] = text }.ToString(Newtonsoft.Json.Formatting.None);
 
         var request = new HttpRequestMessage(HttpMethod.Post, _options.PostUrl)
         {
@@ -112,11 +182,6 @@ public class TwitterPosterService : ITwitterPosterService
         return request;
     }
 
-    /// <summary>
-    /// RFC 3986 percent-encoding. Uri.EscapeDataString has varied across .NET
-    /// versions on whether it escapes ! ' ( ) *, and an OAuth signature breaks
-    /// if the client and server disagree by a single character.
-    /// </summary>
     private static string Escape(string value)
     {
         const string unreserved =

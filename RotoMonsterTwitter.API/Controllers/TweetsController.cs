@@ -60,7 +60,7 @@ public class TweetsController : ControllerBase
     [HttpPost("PostTweet")]
     public async Task<IActionResult> PostTweet(
         [FromBody] PostTweetRequest request, CancellationToken ct)
-        => Ok(await _poster.PostTweetAsync(request.Text, ct));
+        => Ok(await _poster.PostTweetAsync(request.Text, request.Account, ct));
 
     /// <summary>Pull new tweets for a list. This is what the monitoring app calls.</summary>
     [HttpPost("Ingest/{listId:long}")]
