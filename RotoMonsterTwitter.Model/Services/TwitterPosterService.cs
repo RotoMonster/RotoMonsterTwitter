@@ -44,7 +44,11 @@ public class TwitterPosterService : ITwitterPosterService
         List<TwitterPostAccount> toTry;
         if (string.IsNullOrWhiteSpace(account))
         {
-            toTry = accounts;
+            toTry = accounts.Where(a => a.UseAsFallback).ToList();
+            if (toTry.Count == 0)
+            {
+                return Fail("No default posting accounts. Pass an account name or set UseAsFallback to true on one.");
+            }
         }
         else
         {

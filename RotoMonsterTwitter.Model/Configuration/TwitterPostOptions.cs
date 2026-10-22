@@ -41,6 +41,7 @@ public class TwitterPostAccount
     public string ConsumerSecret { get; set; } = "";
     public string AccessToken { get; set; } = "";
     public string AccessTokenSecret { get; set; } = "";
+    public bool UseAsFallback { get; set; } = true;
 
     public bool IsConfigured =>
         !string.IsNullOrWhiteSpace(ConsumerKey) &&
