@@ -2,6 +2,8 @@ namespace RotoMonsterTwitter.Contracts.Requests;
 
 public class SetPlayerStatusRequest
 {
+    public int SportId { get; set; } = 1;
+
     public List<PlayerStatusUpdate> Players { get; set; } = new();
 }
 

@@ -3,6 +3,7 @@ namespace RotoMonsterTwitter.Model.Entities;
 public class TwitterTeamAlias
 {
     public int Id { get; set; }
+    public int SportId { get; set; }
     public int TeamId { get; set; }
 
     public string Alias { get; set; } = "";

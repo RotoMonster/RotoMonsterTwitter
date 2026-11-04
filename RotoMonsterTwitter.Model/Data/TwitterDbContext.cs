@@ -122,7 +122,7 @@ public class TwitterDbContext : DbContext
         b.Entity<TwitterPlayer>(e =>
         {
             e.ToTable("TwitterPlayers");
-            e.HasKey(x => x.PlayerId);
+            e.HasKey(x => new { x.SportId, x.PlayerId });
             e.Property(x => x.PlayerId).ValueGeneratedNever();
             e.Property(x => x.FirstName).HasMaxLength(100);
             e.Property(x => x.LastName).HasMaxLength(100).IsRequired();
@@ -136,7 +136,7 @@ public class TwitterDbContext : DbContext
 
             e.HasMany(x => x.Aliases)
              .WithOne(x => x.Player!)
-             .HasForeignKey(x => x.PlayerId)
+             .HasForeignKey(x => new { x.SportId, x.PlayerId })
              .OnDelete(DeleteBehavior.Cascade);
         });
 
@@ -161,7 +161,7 @@ public class TwitterDbContext : DbContext
         b.Entity<TwitterTeam>(e =>
         {
             e.ToTable("TwitterTeams");
-            e.HasKey(x => x.TeamId);
+            e.HasKey(x => new { x.SportId, x.TeamId });
             e.Property(x => x.TeamId).ValueGeneratedNever();
             e.Property(x => x.City).HasMaxLength(100);
             e.Property(x => x.Name).HasMaxLength(100).IsRequired();
@@ -174,7 +174,7 @@ public class TwitterDbContext : DbContext
 
             e.HasMany(x => x.Aliases)
              .WithOne(x => x.Team!)
-             .HasForeignKey(x => x.TeamId)
+             .HasForeignKey(x => new { x.SportId, x.TeamId })
              .OnDelete(DeleteBehavior.Cascade);
         });
 
@@ -196,17 +196,12 @@ public class TwitterDbContext : DbContext
             e.Property(x => x.MatchType).HasMaxLength(20).IsRequired();
             e.Property(x => x.Confidence).HasPrecision(3, 2);
 
-            e.HasIndex(x => x.PlayerId);
+            e.HasIndex(x => new { x.SportId, x.PlayerId });
             e.HasIndex(x => x.Confidence);
 
             e.HasOne(x => x.Tweet)
              .WithMany()
              .HasForeignKey(x => x.TweetId)
-             .OnDelete(DeleteBehavior.Cascade);
-
-            e.HasOne(x => x.Player)
-             .WithMany()
-             .HasForeignKey(x => x.PlayerId)
              .OnDelete(DeleteBehavior.Cascade);
         });
 
@@ -218,16 +213,11 @@ public class TwitterDbContext : DbContext
             e.Property(x => x.MatchType).HasMaxLength(20).IsRequired();
             e.Property(x => x.Confidence).HasPrecision(3, 2);
 
-            e.HasIndex(x => x.TeamId);
+            e.HasIndex(x => new { x.SportId, x.TeamId });
 
             e.HasOne(x => x.Tweet)
              .WithMany()
              .HasForeignKey(x => x.TweetId)
-             .OnDelete(DeleteBehavior.Cascade);
-
-            e.HasOne(x => x.Team)
-             .WithMany()
-             .HasForeignKey(x => x.TeamId)
              .OnDelete(DeleteBehavior.Cascade);
         });
 

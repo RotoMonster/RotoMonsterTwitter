@@ -195,11 +195,14 @@ namespace RotoMonsterTwitter.Model.Migrations
                     b.Property<int>("Occurrences")
                         .HasColumnType("integer");
 
+                    b.Property<int>("SportId")
+                        .HasColumnType("integer");
+
                     b.HasKey("TweetId", "PlayerId");
 
                     b.HasIndex("Confidence");
 
-                    b.HasIndex("PlayerId");
+                    b.HasIndex("SportId", "PlayerId");
 
                     b.ToTable("TweetPlayers", (string)null);
                 });
@@ -225,9 +228,12 @@ namespace RotoMonsterTwitter.Model.Migrations
                     b.Property<int>("Occurrences")
                         .HasColumnType("integer");
 
+                    b.Property<int>("SportId")
+                        .HasColumnType("integer");
+
                     b.HasKey("TweetId", "TeamId");
 
-                    b.HasIndex("TeamId");
+                    b.HasIndex("SportId", "TeamId");
 
                     b.ToTable("TweetTeams", (string)null);
                 });
@@ -364,6 +370,9 @@ namespace RotoMonsterTwitter.Model.Migrations
 
             modelBuilder.Entity("RotoMonsterTwitter.Model.Entities.TwitterPlayer", b =>
                 {
+                    b.Property<int>("SportId")
+                        .HasColumnType("integer");
+
                     b.Property<int>("PlayerId")
                         .HasColumnType("integer");
 
@@ -396,13 +405,10 @@ namespace RotoMonsterTwitter.Model.Migrations
                     b.Property<int?>("PlayerStatusTypeId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("SportId")
-                        .HasColumnType("integer");
-
                     b.Property<int?>("TeamId")
                         .HasColumnType("integer");
 
-                    b.HasKey("PlayerId");
+                    b.HasKey("SportId", "PlayerId");
 
                     b.HasIndex("NormalizedLastName");
 
@@ -436,17 +442,23 @@ namespace RotoMonsterTwitter.Model.Migrations
                     b.Property<int>("PlayerId")
                         .HasColumnType("integer");
 
+                    b.Property<int>("SportId")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.HasIndex("NormalizedAlias");
 
-                    b.HasIndex("PlayerId");
+                    b.HasIndex("SportId", "PlayerId");
 
                     b.ToTable("TwitterPlayerAliases", (string)null);
                 });
 
             modelBuilder.Entity("RotoMonsterTwitter.Model.Entities.TwitterTeam", b =>
                 {
+                    b.Property<int>("SportId")
+                        .HasColumnType("integer");
+
                     b.Property<int>("TeamId")
                         .HasColumnType("integer");
 
@@ -483,10 +495,7 @@ namespace RotoMonsterTwitter.Model.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<int>("SportId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("TeamId");
+                    b.HasKey("SportId", "TeamId");
 
                     b.HasIndex("SportId");
 
@@ -511,6 +520,9 @@ namespace RotoMonsterTwitter.Model.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");
 
+                    b.Property<int>("SportId")
+                        .HasColumnType("integer");
+
                     b.Property<int>("TeamId")
                         .HasColumnType("integer");
 
@@ -518,7 +530,7 @@ namespace RotoMonsterTwitter.Model.Migrations
 
                     b.HasIndex("NormalizedAlias");
 
-                    b.HasIndex("TeamId");
+                    b.HasIndex("SportId", "TeamId");
 
                     b.ToTable("TwitterTeamAliases", (string)null);
                 });
@@ -567,38 +579,22 @@ namespace RotoMonsterTwitter.Model.Migrations
 
             modelBuilder.Entity("RotoMonsterTwitter.Model.Entities.TweetPlayer", b =>
                 {
-                    b.HasOne("RotoMonsterTwitter.Model.Entities.TwitterPlayer", "Player")
-                        .WithMany()
-                        .HasForeignKey("PlayerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("RotoMonsterTwitter.Model.Entities.Tweet", "Tweet")
                         .WithMany()
                         .HasForeignKey("TweetId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Player");
 
                     b.Navigation("Tweet");
                 });
 
             modelBuilder.Entity("RotoMonsterTwitter.Model.Entities.TweetTeam", b =>
                 {
-                    b.HasOne("RotoMonsterTwitter.Model.Entities.TwitterTeam", "Team")
-                        .WithMany()
-                        .HasForeignKey("TeamId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("RotoMonsterTwitter.Model.Entities.Tweet", "Tweet")
                         .WithMany()
                         .HasForeignKey("TweetId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Team");
 
                     b.Navigation("Tweet");
                 });
@@ -607,7 +603,7 @@ namespace RotoMonsterTwitter.Model.Migrations
                 {
                     b.HasOne("RotoMonsterTwitter.Model.Entities.TwitterPlayer", "Player")
                         .WithMany("Aliases")
-                        .HasForeignKey("PlayerId")
+                        .HasForeignKey("SportId", "PlayerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -618,7 +614,7 @@ namespace RotoMonsterTwitter.Model.Migrations
                 {
                     b.HasOne("RotoMonsterTwitter.Model.Entities.TwitterTeam", "Team")
                         .WithMany("Aliases")
-                        .HasForeignKey("TeamId")
+                        .HasForeignKey("SportId", "TeamId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

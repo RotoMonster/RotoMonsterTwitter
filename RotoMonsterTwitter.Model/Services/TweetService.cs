@@ -180,7 +180,7 @@ public class TweetService : ITweetService
 
         var playerMatches = await (
             from tp in _db.TweetPlayers
-            join p in _db.TwitterPlayers on tp.PlayerId equals p.PlayerId
+            join p in _db.TwitterPlayers on new { tp.SportId, tp.PlayerId } equals new { p.SportId, p.PlayerId }
             where ids.Contains(tp.TweetId)
             select new
             {
@@ -190,7 +190,7 @@ public class TweetService : ITweetService
 
         var teamMatches = await (
             from tt in _db.TweetTeams
-            join t in _db.TwitterTeams on tt.TeamId equals t.TeamId
+            join t in _db.TwitterTeams on new { tt.SportId, tt.TeamId } equals new { t.SportId, t.TeamId }
             where ids.Contains(tt.TweetId)
             select new
             {

@@ -273,6 +273,7 @@ public class TweetProcessingService : ITweetProcessingService
         return new TweetPlayer
         {
             TweetId = "",
+            SportId = player.SportId,
             PlayerId = player.PlayerId,
             MatchType = matchType,
             Confidence = confidence,
@@ -310,6 +311,7 @@ public class TweetProcessingService : ITweetProcessingService
         => new()
         {
             TweetId = "",
+            SportId = team.SportId,
             TeamId = team.TeamId,
             MatchType = matchType,
             Confidence = confidence,

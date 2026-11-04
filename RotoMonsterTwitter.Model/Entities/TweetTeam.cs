@@ -3,6 +3,7 @@ namespace RotoMonsterTwitter.Model.Entities;
 public class TweetTeam
 {
     public string TweetId { get; set; } = "";
+    public int SportId { get; set; }
     public int TeamId { get; set; }
 
     /// <summary>FullName, Name, Alias or Abbreviation.</summary>
@@ -12,5 +13,4 @@ public class TweetTeam
     public int Occurrences { get; set; } = 1;
 
     public Tweet? Tweet { get; set; }
-    public TwitterTeam? Team { get; set; }
 }

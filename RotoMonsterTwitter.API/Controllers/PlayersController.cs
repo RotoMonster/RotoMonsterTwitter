@@ -118,7 +118,7 @@ public class PlayersController : ControllerBase
 
         var players = await _db.TwitterPlayers
             .Include(p => p.Aliases)
-            .Where(p => playerIds.Contains(p.PlayerId))
+            .Where(p => p.SportId == request.SportId && playerIds.Contains(p.PlayerId))
             .ToListAsync(ct);
 
         var byId = players.ToDictionary(p => p.PlayerId);
