@@ -256,6 +256,11 @@ public class TweetService : ITweetService
 
             if (playersByTweet.TryGetValue(t.TweetId, out var pm))
             {
+                var fullNameCounts = pm
+                    .Where(x => x.MatchType == "FullName")
+                    .GroupBy(x => (x.FirstName + " " + x.LastName).Trim().ToLowerInvariant())
+                    .ToDictionary(g => g.Key, g => g.Count());
+
                 result.Players = pm
                     .OrderByDescending(x => x.Confidence)
                     .ThenBy(x => x.LastName)
@@ -267,7 +272,10 @@ public class TweetService : ITweetService
                         TeamId = x.TeamId,
                         MatchType = x.MatchType,
                         Confidence = x.Confidence,
-                        Occurrences = x.Occurrences
+                        Occurrences = x.Occurrences,
+                        IsExactMatch = x.MatchType == "FullName"
+                            && fullNameCounts.TryGetValue((x.FirstName + " " + x.LastName).Trim().ToLowerInvariant(), out var sameName)
+                            && sameName == 1
                     }).ToList();
             }
 

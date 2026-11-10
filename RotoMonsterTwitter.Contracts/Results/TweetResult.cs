@@ -79,6 +79,8 @@ public class TweetPlayerMatch
     public decimal Confidence { get; set; }
 
     public int Occurrences { get; set; }
+
+    public bool IsExactMatch { get; set; }
 }
 
 public class TweetTeamMatch
